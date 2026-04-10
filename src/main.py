@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from search import query_quran
+from orchestrator import generate_answer
 
 app = FastAPI()
 
@@ -9,7 +10,7 @@ def read_root():
 
 @app.get("/search")
 def search(q: str):
-    results = query_quran(q)
+    results = generate_answer(q)
 
     # Let's format the response nicely for your Node.js bot
     formatted_results = []
