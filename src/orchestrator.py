@@ -51,6 +51,6 @@ def generate_answer(user_query):
     return response.content
 
 if __name__ == "__main__":
-    q = "What does the Quran say about helping others?"
+    q = input("Ask a question about the Quran: ")
     print(f"User: {q}\n")
     print(f"Bayyan AI: {generate_answer(q)}")
