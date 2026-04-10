@@ -75,9 +75,46 @@ def save_to_vector_db(data):
     )
     print("🚀 Data successfully vectorized and saved to ./quran_vectordb")
 
+def save_to_vector_db_v2(data):
+    client = chromadb.PersistentClient(path="./quran_vectordb")
+    
+    model_name = "all-MiniLM-L6-v2"
+    emb_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=model_name)
+    
+    collection = client.get_or_create_collection(name="quran_verses", embedding_function=emb_fn)
+
+    # De-duplicate data using a dictionary
+    unique_data = {item['metadata']['id']: item for item in data}
+    clean_list = list(unique_data.values())
+
+    ids = [item['metadata']['id'] for item in clean_list]
+    documents = [item['text'] for item in clean_list]
+    metadatas = [item['metadata'] for item in clean_list]
+
+    # --- FIX: Batch Processing ---
+    batch_size = 100  # Small batches are safer for memory and HuggingFace models
+    total_items = len(clean_list)
+    
+    print(f"Total verses to process: {total_items}")
+
+    for i in range(0, total_items, batch_size):
+        batch_ids = ids[i : i + batch_size]
+        batch_docs = documents[i : i + batch_size]
+        batch_metas = metadatas[i : i + batch_size]
+
+        collection.upsert(
+            ids=batch_ids,
+            documents=batch_docs,
+            metadatas=batch_metas
+        )
+        print(f"✅ Processed batch {i//batch_size + 1}: {i + len(batch_ids)}/{total_items} verses")
+
+    print("🚀 Data successfully vectorized and saved to ./quran_vectordb")
+
+
 if __name__ == "__main__":
     ayah_data = get_processed_data()
     if ayah_data:
-        save_to_vector_db(ayah_data)
+        save_to_vector_db_v2(ayah_data)
 
 
