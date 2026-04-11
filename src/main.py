@@ -10,19 +10,31 @@ def read_root():
 
 @app.get("/search")
 def search(q: str):
-    results = generate_answer(q)
+    # 1. Get raw vector search results for the UI cards
+    raw_results = query_quran(q)
+    
+    # 2. Get the LLM generated answer from the orchestrator
+    llm_answer = generate_answer(q)
 
-    # Let's format the response nicely for your Node.js bot
-    formatted_results = []
-    for i in range(len(results['documents'][0])):
-        formatted_results.append({
-            "text": results['documents'][0][i],
-            "surah": results['metadatas'][0][i]['surah_name'],
-            "ayah": results['metadatas'][0][i]['ayah_no'],
-            "arabic": results['metadatas'][0][i]['arabic_text']
+    # 3. Format the verses for the UI
+    formatted_matches = []
+    # ChromaDB returns lists of lists, so we access index [0]
+    docs = raw_results.get('documents', [[]])[0]
+    metas = raw_results.get('metadatas', [[]])[0]
+
+    for i in range(len(docs)):
+        formatted_matches.append({
+            "text": docs[i],
+            "surah": metas[i]['surah_name'],
+            "ayah": metas[i]['ayah_no'],
+            "arabic": metas[i]['arabic_text']
         })
     
-    return {"query": q, "matches": formatted_results}
+    return {
+        "query": q, 
+        "answer": llm_answer,
+        "matches": formatted_matches
+    }
 
 if __name__ == "__main__":
     import uvicorn
